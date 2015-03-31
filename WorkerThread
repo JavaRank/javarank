@@ -1,0 +1,74 @@
+package org.soap.webservices;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.Callable;
+
+public class WorkerThread implements Callable<Set<String>> {
+
+	private String baseUrl;
+    private String downloadUrl;
+    private StringBuilder webPageData;
+    private Set<String> parsedUrlSet;
+
+    public WorkerThread(String url, String baseUrl){
+        this.downloadUrl = url;
+        this.baseUrl = baseUrl;
+    }
+
+    @Override
+    public Set<String> call()throws Exception {
+        downloadWebPage();
+        parseWebPage();
+        return parsedUrlSet;
+    }
+
+    private void parseWebPage() {
+    	if(webPageData!=null){
+    		parsedUrlSet = new HashSet<String>();
+	    	String [] tokens= webPageData.toString().split("[\"]+");
+	    	for (String token : tokens) {
+	    		if(token.startsWith(baseUrl)&& !(token.endsWith(".png")||token.endsWith(".jpg")))
+	    			parsedUrlSet.add(token);
+	    			
+			}
+	    	tokens=null;
+    	}
+    }
+
+	private void downloadWebPage() {
+            InputStream is = null;
+            String line;
+		   
+            try {
+		    	URL url = new URL(downloadUrl);
+		    	is = url.openStream(); 
+		    	BufferedReader br = new BufferedReader(new InputStreamReader(is));
+		    	webPageData = new StringBuilder();
+		        while ((line = br.readLine()) != null) {
+		        	webPageData.append(line);
+		        }
+		        //System.out.println(webPageData);
+		        br=null;
+		    } catch (MalformedURLException mue) {
+		    	System.out.println("MalformedURLException : "+downloadUrl);
+		         mue.printStackTrace();
+		    } catch (IOException ioe) {
+		    	System.out.println("IOException : "+downloadUrl);
+		         ioe.printStackTrace();
+		    } finally {
+		        try {
+		            if (is != null) is.close();
+		        } catch (IOException ioe) { }
+		    }
+       
+    }
+
+}
+
