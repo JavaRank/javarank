@@ -1,0 +1,107 @@
+package org.soap.webservices;
+
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+/*
+ * WebCrawler module. WebCrawler will be provided millions of URLs. 
+ * The web page will be downloaded and then parsed for more URLs. 
+ * If more URLs are found then they should also be downloaded and parsed. 
+ */
+public class WebCrawler {
+
+	private String baseUrl;  
+	private Queue<Future<Set<String>>> futureQueue = new LinkedList<Future<Set<String>>>();
+	private Set<String> downloadedURLSet = new HashSet<String>();
+	private Queue<String> urlQueue = new LinkedList<String>();
+
+	public void startCrawler() {
+		/*
+		 * Creates Thread pool
+		 */
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+		urlQueue.add(baseUrl);
+		downloadedURLSet.add(baseUrl);
+
+		do {
+			submitDownloadingJob(executor);
+			
+			findMoreURL();
+			System.out.println(urlQueue.size());
+		} while (!urlQueue.isEmpty());
+
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+		}
+		System.out.println("Finished all threads");
+
+	}
+
+	/*
+	 * This method putting download job in thread pool
+	 */
+	private void submitDownloadingJob(ExecutorService executor) {
+		while (!urlQueue.isEmpty()) {
+			String url = urlQueue.poll();
+			System.out.println("Downloading and Parsing  url : " + url);
+			Callable<Set<String>> worker = new WorkerThread(url, baseUrl);
+			Future<Set<String>> future = executor.submit(worker);
+			futureQueue.add(future);
+		}
+
+	}
+	/*
+	 * This method finds more urls from downloaded web page.
+	 */
+	private void findMoreURL() {
+		while (!futureQueue.isEmpty()) {
+			try {
+				Set<String> parsedUrlSet = futureQueue.poll().get();
+				if(parsedUrlSet!=null){
+					Set<String> newUrl = getNewUrl(parsedUrlSet);
+					urlQueue.addAll(newUrl);
+					System.out.println(newUrl.size()+" More URLs are found : " + newUrl);
+				}
+				
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	/*
+	 * This method filter unique urls.
+	 */
+	private Set<String> getNewUrl(Set<String> parsedUrlSet) {
+		Set<String> newUrl = new HashSet<String>();
+		for (String url : parsedUrlSet) {
+			if(!downloadedURLSet.contains(url))
+				newUrl.add(url);
+			downloadedURLSet.addAll(newUrl);
+		}
+		return newUrl;
+	}
+
+	public Set<String> getDownloadedURLSet() {
+		return downloadedURLSet;
+	}
+
+	public String getBaseUrl() {
+		return baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
+	}
+
+	
+
+}
