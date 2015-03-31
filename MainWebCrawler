@@ -1,0 +1,25 @@
+package org.soap.webservices;
+
+
+/*
+ * Client Interface for WebCrawler. WebCrawler will be provided millions of URLs. 
+ * The web page will be downloaded and then parsed for more URLs. 
+ * If more URLs are found then they should also be downloaded and parsed. 
+ * 
+ * This interface will provide the base URL for download webpage and get downloaded URLs
+ */
+public class MainWebCrawler {
+	
+	public static void main(String[] args) {
+		System.out.println("*********** Web Crawler Started ***********");
+		WebCrawler webCrawler = new WebCrawler();
+		webCrawler.setBaseUrl("http://www.javatpoint.com/");
+		webCrawler.startCrawler();
+		System.out.println("*********** Downloaded URL Set ***********");
+		System.out.println("Total Urls Founds "+webCrawler.getDownloadedURLSet().size());
+		System.out.println(webCrawler.getDownloadedURLSet());
+		System.out.println("*********** Web Crawler End ***********");
+		}
+	
+}
+
